@@ -1,0 +1,291 @@
+
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>カルテ登録・閲覧システム</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<h2 class="sr-only" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)">子どもカルテ登録・閲覧システム</h2>
+
+
+<div class="app">
+  <div class="topbar">
+    <div>
+      <div class="topbar-title">カルテシステム</div>
+      <div class="topbar-sub" id="count-label">登録件数: 0件</div>
+    </div>
+    <button class="btn primary" onclick="switchTab('register')">+ 新規登録</button>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" id="tab-list" onclick="switchTab('list')">カルテ一覧</button>
+    <button class="tab" id="tab-register" onclick="switchTab('register')">新規登録</button>
+    <button class="tab" id="tab-detail" onclick="switchTab('detail')" style="display:none">カルテ詳細</button>
+  </div>
+
+  <div class="section active" id="sec-list">
+    <div class="search-row">
+      <input type="text" id="search" placeholder="名前・読み仮名で検索..." oninput="renderList()">
+    </div>
+    <div class="list-header">
+      <span></span><span>名前</span><span>年齢</span><span>血液型</span><span>アレルギー</span><span>最終来店</span>
+    </div>
+    <div id="list-body"></div>
+  </div>
+
+  <div class="section" id="sec-register">
+    <div class="form-section-label">基本情報</div>
+    <div class="grid2">
+      <div class="fg"><label>氏名 *</label><input type="text" id="f-name" placeholder="山田 太郎"></div>
+      <div class="fg"><label>読み仮名</label><input type="text" id="f-kana" placeholder="やまだ たろう"></div>
+    </div>
+    <div class="grid3">
+      <div class="fg"><label>生年月日</label><input type="date" id="f-birth"></div>
+      <div class="fg"><label>年齢</label><input type="number" id="f-age" placeholder="7" min="0" max="18"></div>
+      <div class="fg"><label>血液型</label>
+        <select id="f-blood"><option value="">不明</option><option>A型</option><option>B型</option><option>O型</option><option>AB型</option></select>
+      </div>
+    </div>
+
+    <div class="form-section-label">アレルギー・健康情報</div>
+    <div class="fg"><label>アレルギー（複数選択可）</label>
+      <div class="tags-row" id="allergy-tags">
+        <button class="tag-btn" onclick="toggleTag(this,'sel-allergy')">卵</button>
+        <button class="tag-btn" onclick="toggleTag(this,'sel-allergy')">乳製品</button>
+        <button class="tag-btn" onclick="toggleTag(this,'sel-allergy')">小麦</button>
+        <button class="tag-btn" onclick="toggleTag(this,'sel-allergy')">そば</button>
+        <button class="tag-btn" onclick="toggleTag(this,'sel-allergy')">ピーナッツ</button>
+        <button class="tag-btn" onclick="toggleTag(this,'sel-allergy')">えび・かに</button>
+        <button class="tag-btn" onclick="toggleTag(this,'sel-allergy')">果物</button>
+        <button class="tag-btn" onclick="toggleTag(this,'sel-allergy')">その他</button>
+      </div>
+    </div>
+    <div class="grid2">
+      <div class="fg"><label>持病・注意事項</label><input type="text" id="f-disease" placeholder="例: 喘息、てんかん"></div>
+      <div class="fg"><label>緊急連絡先</label><input type="text" id="f-emergency" placeholder="090-0000-0000"></div>
+    </div>
+
+    <div class="form-section-label">患部</div>
+    <div class="fg"><label>患部（複数選択可）</label>
+      <div class="tags-row" id="body-tags">
+        <button class="tag-btn" onclick="toggleTag(this,'sel-body')">頭</button>
+        <button class="tag-btn" onclick="toggleTag(this,'sel-body')">首・肩</button>
+        <button class="tag-btn" onclick="toggleTag(this,'sel-body')">胸・腹</button>
+        <button class="tag-btn" onclick="toggleTag(this,'sel-body')">腰・背中</button>
+        <button class="tag-btn" onclick="toggleTag(this,'sel-body')">腕・手</button>
+        <button class="tag-btn" onclick="toggleTag(this,'sel-body')">足・膝</button>
+        <button class="tag-btn" onclick="toggleTag(this,'sel-body')">皮膚</button>
+        <button class="tag-btn" onclick="toggleTag(this,'sel-body')">その他</button>
+      </div>
+    </div>
+    <div class="fg"><label>患部メモ</label><textarea id="f-body-memo" placeholder="例: 右膝に慢性的な痛み。激しい運動は控える。"></textarea></div>
+
+    <div class="form-section-label">来店メモ</div>
+    <div class="fg"><label>初回メモ・備考</label><textarea id="f-memo" placeholder="例: 人見知りあり。慣れると活発。"></textarea></div>
+
+    <div class="btn-row">
+      <button class="btn" onclick="resetForm()">クリア</button>
+      <button class="btn primary" onclick="saveKarte()">カルテを保存</button>
+    </div>
+    <div id="save-msg" style="text-align:right;font-size:13px;color:var(--color-text-secondary);margin-top:8px;min-height:18px"></div>
+  </div>
+
+  <div class="section" id="sec-detail">
+    <div style="margin-bottom:1rem">
+      <button class="btn" onclick="switchTab('list')">&larr; 一覧に戻る</button>
+    </div>
+    <div id="detail-content"></div>
+
+    <div class="form-section-label" style="margin-top:1.5rem">来店履歴を追加</div>
+    <div class="grid2">
+      <div class="fg"><label>来店日</label><input type="date" id="v-date"></div>
+      <div class="fg"><label>担当スタッフ</label><input type="text" id="v-staff" placeholder="例: 佐藤"></div>
+    </div>
+    <div class="fg"><label>メモ</label><textarea id="v-memo" placeholder="例: 今日は元気だった。膝の痛みは改善傾向。"></textarea></div>
+    <div class="btn-row">
+      <button class="btn primary" onclick="addVisit()">来店記録を追加</button>
+    </div>
+    <div id="visit-list" style="margin-top:1rem"></div>
+  </div>
+</div>
+
+<script>
+let kartes = [];
+let selectedId = null;
+
+const colors = ['#E6F1FB','#EAF3DE','#FAEEDA','#FBEAF0','#E1F5EE'];
+const tcolors = ['#0C447C','#27500A','#633806','#72243E','#085041'];
+
+function initDate(){
+  const t = new Date();
+  const s = t.toISOString().split('T')[0];
+  const vd = document.getElementById('v-date');
+  if(vd) vd.value = s;
+}
+
+function switchTab(tab){
+  ['list','register','detail'].forEach(t=>{
+    document.getElementById('sec-'+t).classList.remove('active');
+    const el = document.getElementById('tab-'+t);
+    if(el) el.classList.remove('active');
+  });
+  document.getElementById('sec-'+tab).classList.add('active');
+  const te = document.getElementById('tab-'+tab);
+  if(te) te.classList.add('active');
+  if(tab==='list') renderList();
+  if(tab==='detail' && selectedId!==null) renderDetail();
+}
+
+function toggleTag(btn, cls){
+  if(btn.classList.contains(cls)) btn.classList.remove(cls);
+  else btn.classList.add(cls);
+}
+
+function getSelectedTags(containerId, cls){
+  return Array.from(document.querySelectorAll('#'+containerId+' .'+cls)).map(b=>b.textContent);
+}
+
+function resetForm(){
+  ['f-name','f-kana','f-age','f-disease','f-emergency','f-memo','f-body-memo'].forEach(id=>{
+    const el=document.getElementById(id); if(el) el.value='';
+  });
+  const bd=document.getElementById('f-birth'); if(bd) bd.value='';
+  const bl=document.getElementById('f-blood'); if(bl) bl.value='';
+  document.querySelectorAll('#allergy-tags .sel-allergy').forEach(b=>b.classList.remove('sel-allergy'));
+  document.querySelectorAll('#body-tags .sel-body').forEach(b=>b.classList.remove('sel-body'));
+  document.getElementById('save-msg').textContent='';
+}
+
+function saveKarte(){
+  const name = document.getElementById('f-name').value.trim();
+  if(!name){document.getElementById('save-msg').textContent='氏名を入力してください';return;}
+  const id = Date.now();
+  const colorIdx = kartes.length % colors.length;
+  kartes.unshift({
+    id, colorIdx,
+    name,
+    kana: document.getElementById('f-kana').value.trim(),
+    birth: document.getElementById('f-birth').value,
+    age: document.getElementById('f-age').value,
+    blood: document.getElementById('f-blood').value,
+    allergies: getSelectedTags('allergy-tags','sel-allergy'),
+    disease: document.getElementById('f-disease').value.trim(),
+    emergency: document.getElementById('f-emergency').value.trim(),
+    bodyParts: getSelectedTags('body-tags','sel-body'),
+    bodyMemo: document.getElementById('f-body-memo').value.trim(),
+    memo: document.getElementById('f-memo').value.trim(),
+    visits: [],
+    createdAt: new Date().toLocaleDateString('ja-JP')
+  });
+  updateCount();
+  document.getElementById('save-msg').textContent = name + ' さんのカルテを保存しました';
+  setTimeout(()=>{resetForm(); switchTab('list');}, 900);
+}
+
+function updateCount(){
+  document.getElementById('count-label').textContent = '登録件数: ' + kartes.length + '件';
+}
+
+function renderList(){
+  const q = document.getElementById('search').value.trim().toLowerCase();
+  const filtered = kartes.filter(k=> !q || k.name.toLowerCase().includes(q) || k.kana.toLowerCase().includes(q));
+  const body = document.getElementById('list-body');
+  if(!filtered.length){body.innerHTML='<div class="empty">該当するカルテがありません</div>';return;}
+  body.innerHTML = filtered.map(k=>{
+    const lastVisit = k.visits.length ? k.visits[k.visits.length-1].date : k.createdAt;
+    const allergyText = k.allergies.length ? k.allergies.map(a=>'<span class="pill pill-red">'+a+'</span>').join(' ') : '<span class="pill pill-gray">なし</span>';
+    const initials = k.name.replace(/\s/g,'').slice(0,2);
+    const bg = colors[k.colorIdx]; const tc = tcolors[k.colorIdx];
+    return '<div class="list-row" onclick="openDetail('+k.id+')">'
+      +'<div class="avatar" style="background:'+bg+';color:'+tc+'">'+initials+'</div>'
+      +'<div style="font-size:14px;color:var(--color-text-primary);font-weight:500">'+k.name+(k.kana?'<br><span style="font-size:11px;font-weight:400;color:var(--color-text-secondary)">'+k.kana+'</span>':'')+'</div>'
+      +'<div style="font-size:14px;color:var(--color-text-primary)">'+(k.age?k.age+'歳':'—')+'</div>'
+      +'<div style="font-size:13px;color:var(--color-text-secondary)">'+(k.blood||'—')+'</div>'
+      +'<div style="font-size:12px">'+allergyText+'</div>'
+      +'<div style="font-size:12px;color:var(--color-text-secondary)">'+lastVisit+'</div>'
+      +'</div>';
+  }).join('');
+}
+
+function openDetail(id){
+  selectedId = id;
+  document.getElementById('tab-detail').style.display='';
+  switchTab('detail');
+}
+
+function renderDetail(){
+  const k = kartes.find(x=>x.id===selectedId);
+  if(!k) return;
+  const bg = colors[k.colorIdx]; const tc = tcolors[k.colorIdx];
+  const initials = k.name.replace(/\s/g,'').slice(0,2);
+
+  let allergyPills = k.allergies.length ? k.allergies.map(a=>'<span class="tag-d al">'+a+'</span>').join('') : '—';
+  let bodyPills = k.bodyParts.length ? k.bodyParts.map(b=>'<span class="tag-d bp">'+b+'</span>').join('') : '—';
+
+  let warningHTML = '';
+  if(k.allergies.length || k.disease){
+    warningHTML = '<div class="notice">注意: '+(k.allergies.length?'アレルギーあり（'+k.allergies.join('、')+'）':'')+(k.allergies.length&&k.disease?' / ':'' )+(k.disease||'')+'</div>';
+  }
+
+  document.getElementById('detail-content').innerHTML =
+    warningHTML +
+    '<div class="detail-panel">'
+    +'<div class="detail-header">'
+    +'<div class="detail-avatar" style="background:'+bg+';color:'+tc+'">'+initials+'</div>'
+    +'<div><div class="detail-name">'+k.name+'</div><div class="detail-meta">'+(k.kana||'')+(k.age?' · '+k.age+'歳':'')+(k.blood?' · '+k.blood:'')+'</div></div>'
+    +'<div style="margin-left:auto"><button class="btn danger" onclick="deleteKarte('+k.id+')">削除</button></div>'
+    +'</div>'
+    +'<dl class="dt">'
+    +'<dt>生年月日</dt><dd>'+(k.birth||'—')+'</dd>'
+    +'<dt>アレルギー</dt><dd><div class="tag-display">'+allergyPills+'</div></dd>'
+    +'<dt>持病・注意</dt><dd>'+(k.disease||'—')+'</dd>'
+    +'<dt>緊急連絡先</dt><dd>'+(k.emergency||'—')+'</dd>'
+    +'<dt>患部</dt><dd><div class="tag-display">'+bodyPills+'</div></dd>'
+    +'<dt>患部メモ</dt><dd>'+(k.bodyMemo||'—')+'</dd>'
+    +'<dt>備考</dt><dd>'+(k.memo||'—')+'</dd>'
+    +'<dt>登録日</dt><dd>'+k.createdAt+'</dd>'
+    +'</dl>'
+    +'</div>';
+
+  renderVisits(k);
+}
+
+function renderVisits(k){
+  const vl = document.getElementById('visit-list');
+  if(!k.visits.length){vl.innerHTML='<div style="font-size:13px;color:var(--color-text-secondary);padding:8px 0">来店履歴はまだありません</div>';return;}
+  vl.innerHTML = '<div style="font-size:12px;color:var(--color-text-secondary);margin-bottom:6px">来店履歴（'+k.visits.length+'件）</div>'
+    + [...k.visits].reverse().map(v=>
+      '<div class="visit-row"><div class="visit-date">'+v.date+'<br><span style="font-size:11px">'+v.staff+'</span></div><div class="visit-memo">'+v.memo+'</div></div>'
+    ).join('');
+}
+
+function addVisit(){
+  const k = kartes.find(x=>x.id===selectedId);
+  if(!k) return;
+  const date = document.getElementById('v-date').value;
+  const staff = document.getElementById('v-staff').value.trim();
+  const memo = document.getElementById('v-memo').value.trim();
+  if(!date && !memo) return;
+  k.visits.push({date:date||'—', staff:staff||'スタッフ', memo:memo||'（メモなし）'});
+  document.getElementById('v-memo').value='';
+  renderVisits(k);
+  renderDetail();
+}
+
+function deleteKarte(id){
+  if(!confirm('このカルテを削除しますか？')) return;
+  kartes = kartes.filter(k=>k.id!==id);
+  updateCount();
+  document.getElementById('tab-detail').style.display='none';
+  switchTab('list');
+}
+
+kartes = [];
+updateCount();
+renderList();
+initDate();
+</script>
+</body>
+</html>
